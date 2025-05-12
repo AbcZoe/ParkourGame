@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <title>排行榜</title>
+</head>
+<body>
+    <h2>排行榜</h2>
+    <table border="1">
+        <tr>
+            <th>排名</th>
+            <th>使用者id</th>
+            <th>使用者名稱</th>
+            <th>最高分</th>
+        </tr>
+        {% for user in users %}
+        <tr>
+            <td>{{ loop.index }}</td>
+            <td>{{ user.id }}</td>
+            <td>{{ user.username }}</td>
+            <td>{{ user.high_score }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    <br>
+    <a href="/game">回到遊戲主畫面</a>
+</body>
+</html>
