@@ -4,17 +4,17 @@ import dataset
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'
 
-# 資料庫連線，使用 MySQL
-db = dataset.connect('mysql+pymysql://root:123456@localhost/GameUsers')
+# 改用 SQLite 資料庫連線
+db = dataset.connect('sqlite:///game_users.db')
 users_table = db['users']
 
-# 建立資料表（加上 high_score 欄位）
+# 建立資料表（SQLite 語法）
 db.query('''
     CREATE TABLE IF NOT EXISTS users (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        username VARCHAR(100) UNIQUE,
-        password VARCHAR(100),
-        high_score FLOAT DEFAULT 0
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT UNIQUE,
+        password TEXT,
+        high_score REAL DEFAULT 0
     );
 ''')
 
