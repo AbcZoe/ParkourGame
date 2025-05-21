@@ -54,7 +54,7 @@
     // 更新房間內玩家列表並重新渲染
     socket.on('update_room_players', function(data) {
         if (data.room_id === currentRoom) {
-            roomPlayers = data.players;
+            roomPlayers.appendChild(data.players);
             renderRoomPlayers();
         }
     });
@@ -72,7 +72,7 @@
     socket.on('left_room', function(data) {
         if (data.room_id === currentRoom) {
             currentRoom = null;
-            roomPlayers = [];
+            roomPlayers.pop(data.players);
             document.getElementById('room_status').innerText = '你已退出房間';
             document.getElementById('start_game_btn').style.display = 'none';
             document.getElementById('leave_room_btn').style.display = 'none';
@@ -125,6 +125,7 @@
         let room = document.getElementById('new_room').value.trim();
         if(room) {
             socket.emit('create_room', {room_id: room});
+            currentRoom=room;
         }
     }
 
@@ -133,6 +134,7 @@
         let room = document.getElementById('room_select').value;
         if(room) {
             socket.emit('join_room', {room_id: room});
+            currentRoom=room;
         }
     }
 
@@ -140,6 +142,7 @@
     function leaveRoom() {
         if(currentRoom) {
             socket.emit('leave_room', {room_id: currentRoom});
+            currentRoom=none;
         }
     }
 
