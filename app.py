@@ -1,9 +1,10 @@
 from flask import Flask, render_template, request, redirect, url_for, session
 from flask_session import Session
-from flask_socketio import SocketIO, join_room, leave_room, emit
+from flask_socketio import SocketIO, emit, join_room, leave_room
 import bcrypt
 import db_config
 import random
+import time
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your_secret_key_here'
@@ -13,14 +14,22 @@ socketio = SocketIO(app, manage_session=False)
 
 WORDS = ["apple", "banana", "cat", "dog", "elephant", "flower", "guitar", "house", "icecream"]
 online_users = set()
-rooms = {}          # room_id: [nickname1, nickname2, ...]
-game_rooms = {}     # room_id: {...遊戲狀態...}
-
-# 紀錄 sid 與 nickname 對應，方便私訊
 sid_to_nickname = {}
 nickname_to_sid = {}
 
-# ---------- 使用者功能 ----------
+game_state = {
+    'players': [],
+    'current_turn': 0,
+    'scores': {},
+    'rounds_played': set(),
+    'drawer': None,
+    'word': None,
+    'guessed': False,
+    'guessers': set(),
+    'waiting_continue': set(),
+    'continue_votes': {},
+    'started': False
+}
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -73,79 +82,23 @@ def lobby():
         return redirect(url_for('login'))
     return render_template('lobby.html', nickname=session['nickname'])
 
-@app.route('/game/<room_id>')
-def game_room(room_id):
+@app.route('/game')
+def game():
     if 'user_id' not in session:
         return redirect(url_for('login'))
-    if room_id not in rooms:
-        return "房間不存在", 404
-    return render_template('game.html', room_id=room_id, nickname=session['nickname'])
-
-
-# ---------- SocketIO 事件 ----------
+    return render_template('game.html', nickname=session['nickname'])
 
 @socketio.on('connect')
 def handle_connect():
-    if 'user_id' not in session:
-        return False
-    nickname = session['nickname']
+    nickname = session.get('nickname')
+    if not nickname:
+        handle_disconnect()
+        return
     online_users.add(nickname)
     sid_to_nickname[request.sid] = nickname
     nickname_to_sid[nickname] = request.sid
-    emit('update_user_list', list(online_users), broadcast=True)
-    emit('update_room_list', list(rooms.keys()), broadcast=True)
 
-def emit_room_players(room_id):
-    players = rooms.get(room_id, [])
-    socketio.emit('update_room_players', {'room_id': room_id, 'players': players}, room=room_id)
-
-@socketio.on('join_room')
-def join_room_event(data):
-    room_id = data['room_id']
-    if room_id not in rooms:
-        emit('error', {'msg': '房間不存在'})
-        return
-    nickname = session['nickname']
-    if nickname not in rooms[room_id]:
-        rooms[room_id].append(nickname)
-        join_room(room_id)
-    emit('update_room_list', list(rooms.keys()), broadcast=True)
-    emit('joined_room', {'room_id': room_id}, room=request.sid)
-    emit_room_players(room_id)  # 廣播房間內玩家名單
-
-@socketio.on('create_room')
-def create_room(data):
-    room_id = data['room_id']
-    if room_id in rooms:
-        emit('error', {'msg': '房間已存在'})
-    else:
-        rooms[room_id] = [session['nickname']]
-        join_room(room_id)
-        emit('update_room_list', list(rooms.keys()), broadcast=True)
-        emit('joined_room', {'room_id': room_id}, room=request.sid)
-        emit_room_players(room_id)  # 廣播房間內玩家名單
-
-@socketio.on('leave_room')
-def handle_leave_room(data):
-    room_id = data.get('room_id')
-    nickname = session.get('nickname')
-
-    if room_id not in rooms or not nickname:
-        emit('error', {'msg': '房間不存在或使用者未登入'})
-        return
-
-    if nickname in rooms[room_id]:
-        rooms[room_id].remove(nickname)
-        leave_room(room_id)
-        emit_room_players(room_id)
-        emit('left_room', {'room_id': room_id}, room=request.sid)
-
-        # 如果房間沒人了就刪除房間和遊戲資料
-        if len(rooms[room_id]) == 0:
-            rooms.pop(room_id)
-            game_rooms.pop(room_id, None)
-
-        emit('update_room_list', list(rooms.keys()), broadcast=True)
+    socketio.emit('update_user_list', list(online_users), broadcast=True)
 
 @socketio.on('disconnect')
 def handle_disconnect():
@@ -153,68 +106,45 @@ def handle_disconnect():
     nickname = sid_to_nickname.get(sid)
     if nickname:
         online_users.discard(nickname)
-        sid_to_nickname.pop(sid)
+        sid_to_nickname.pop(sid, None)
         nickname_to_sid.pop(nickname, None)
-        for room_id, players in list(rooms.items()):
-            if nickname in players:
-                players.remove(nickname)
-                leave_room(room_id)
-                if len(players) == 0:
-                    rooms.pop(room_id)
-                    game_rooms.pop(room_id, None)
-                else:
-                    game = game_rooms.get(room_id)
-                    if game and game['drawer'] == nickname:
-                        socketio.emit('message', {'msg': '畫家離開，遊戲結束'}, room=room_id)
-                        game_rooms.pop(room_id, None)
-                    emit_room_players(room_id)
-        emit('update_room_list', list(rooms.keys()), broadcast=True)
-        emit('update_user_list', list(online_users), broadcast=True)
+
+        socketio.emit('update_user_list', list(online_users), broadcast=True)
 
 @socketio.on('start_game')
-def handle_start_game(data):
-    room_id = data['room_id']
-    if room_id not in rooms:
-        emit('error', {'msg': '房間不存在'})
-        return
-    if room_id in game_rooms:
-        emit('error', {'msg': '遊戲已經開始'})
-        return
+def handle_start_game():
+    nickname = session['nickname']
+    if nickname not in game_state['players']:
+        game_state['players'].append(nickname)
+        game_state['scores'][nickname] = 0
 
-    socketio.start_background_task(start_game_round, room_id)
-    emit('game_starting', {'msg': '遊戲開始！'}, room=room_id)
-
-
-def start_game_round(room_id):
-    players = rooms[room_id]
-    game = game_rooms.get(room_id, {
-        'players': players,
-        'current_turn': 0,
-        'scores': {p: 0 for p in players},
-        'rounds_played': set()
-    })
-
-    # 全部玩家都畫過一次了，遊戲結束
-    if len(game['rounds_played']) == len(players):
-        socketio.emit('game_over', {'scores': game['scores']}, room=room_id)
-        game_rooms.pop(room_id, None)
+    if game_state['started']:
         return
 
-    # 找出還沒畫過的玩家當本回合畫家
-    while game['players'][game['current_turn']] in game['rounds_played']:
-        game['current_turn'] = (game['current_turn'] + 1) % len(players)
+    game_state['started'] = True
+    socketio.emit('game_starting', {'msg': '遊戲開始！'}, broadcast=True)
+    socketio.start_background_task(start_game_round)
 
-    drawer = game['players'][game['current_turn']]
+def start_game_round():
+    if len(game_state['rounds_played']) == len(game_state['players']):
+        socketio.emit('ask_continue', {'scores': game_state['scores']}, broadcast=True)
+        game_state['waiting_continue'] = set(game_state['players'])
+        game_state['continue_votes'] = {}
+        return
+
+    while game_state['players'][game_state['current_turn']] in game_state['rounds_played']:
+        game_state['current_turn'] = (game_state['current_turn'] + 1) % len(game_state['players'])
+
+    drawer = game_state['players'][game_state['current_turn']]
     word = random.choice(WORDS)
-    game.update({
+    game_state.update({
         'word': word,
         'drawer': drawer,
         'guessed': False,
-        'guessers': set(p for p in players if p != drawer)
+        'guessers': set(p for p in game_state['players'] if p != drawer)
     })
-    game_rooms[room_id] = game
 
-    for player in players:
+    for player in game_state['players']:
         sid = nickname_to_sid.get(player)
         if not sid:
             continue
@@ -223,48 +153,96 @@ def start_game_round(room_id):
         else:
             socketio.emit('game_started', {'msg': f'{drawer} is drawing!'}, room=sid)
 
-@socketio.on('drawing_data')
-def handle_drawing(data):
-    room_id = data['room_id']
-    draw_data = data['draw_data']
-    nickname = session['nickname']
-    game = game_rooms.get(room_id)
-    if game and nickname == game.get('drawer'):
-        socketio.emit('update_drawing', {'draw_data': draw_data}, room=room_id, include_self=False)
+    socketio.start_background_task(timer_countdown, drawer)
+
+def timer_countdown(drawer):
+    for remaining in range(180, 0, -1):
+        socketio.emit('timer_update', {'time': remaining}, broadcast=True)
+        time.sleep(1)
+        if game_state.get('guessed'):
+            return
+
+    if not game_state.get('guessed'):
+        game_state['rounds_played'].add(drawer)
+        socketio.emit('round_timeout', {
+            'drawer': drawer,
+            'word': game_state['word']
+        }, broadcast=True)
+        game_state['current_turn'] = (game_state['current_turn'] + 1) % len(game_state['players'])
+        socketio.start_background_task(start_game_round)
 
 @socketio.on('guess_word')
-def handle_guess(data):
-    room_id = data['room_id']
-    guess = data['guess'].strip().lower()
-    player = session['nickname']
-    game = game_rooms.get(room_id)
+def handle_guess_word(data):
+    nickname = session.get('nickname')
+    guess = data.get('guess', '').strip().lower()
 
-    if not game or game['guessed']:
+    if not nickname or not guess or not game_state.get('word'):
         return
 
-    correct_word = game['word'].lower()
-    if guess == correct_word:
-        game['guessed'] = True
-        game['rounds_played'].add(game['drawer'])
-        game['scores'][player] += 1
+    if nickname not in game_state['guessers'] or game_state['guessed']:
+        return
 
-        # 更新資料庫分數
-        db = db_config.get_db()
-        cursor = db.cursor()
-        cursor.execute("SELECT score FROM users WHERE nickname=%s", (player,))
-        row = cursor.fetchone()
-        if row:
-            cursor.execute("UPDATE users SET score=%s WHERE nickname=%s", (row['score'] + 1, player))
-            db.commit()
+    if guess == game_state['word'].lower():
+        game_state['guessed'] = True
+        game_state['rounds_played'].add(game_state['drawer'])
 
-        socketio.emit('correct_guess', {'player': player, 'word': correct_word}, room=room_id)
+        game_state['scores'][nickname] += 10
+        game_state['scores'][game_state['drawer']] += 5
 
-        # 換下一回合
-        game['current_turn'] = (game['current_turn'] + 1) % len(game['players'])
-        socketio.start_background_task(start_game_round, room_id)
-    else:
-        socketio.emit('guess_result', {'player': player, 'guess': guess}, room=room_id)
+        socketio.emit('correct_guess', {
+            'guesser': nickname,
+            'drawer': game_state['drawer'],
+            'word': game_state['word']
+        }, broadcast=True)
 
+        game_state['current_turn'] = (game_state['current_turn'] + 1) % len(game_state['players'])
+        socketio.start_background_task(start_game_round)
+
+@socketio.on('vote_continue')
+def handle_vote_continue(data):
+    vote = data['continue']
+    nickname = session['nickname']
+    game_state['continue_votes'][nickname] = vote
+
+    if len(game_state['continue_votes']) == len(game_state['waiting_continue']):
+        if all(v is True for v in game_state['continue_votes'].values()):
+            game_state['rounds_played'] = set()
+            game_state['current_turn'] = 0
+            socketio.emit('continue_game', {}, broadcast=True)
+            socketio.start_background_task(start_game_round)
+        else:
+            socketio.emit('game_over', {'scores': game_state['scores']}, broadcast=True)
+            reset_game()
+
+def reset_game():
+    global game_state
+    game_state = {
+        'players': [],
+        'current_turn': 0,
+        'scores': {},
+        'rounds_played': set(),
+        'drawer': None,
+        'word': None,
+        'guessed': False,
+        'guessers': set(),
+        'waiting_continue': set(),
+        'continue_votes': {},
+        'started': False
+    }
+
+# 畫布繪圖事件: 畫家傳送畫筆座標、顏色等，廣播給其他玩家
+@socketio.on('drawing')
+def handle_drawing(data):
+    # 只廣播給非畫家，讓他們看到畫的線條
+    nickname = session.get('nickname')
+    if nickname != game_state['drawer']:
+        return
+    # 廣播給所有除了畫家本人的連線
+    for player in game_state['players']:
+        if player != nickname:
+            sid = nickname_to_sid.get(player)
+            if sid:
+                socketio.emit('drawing', data, room=sid)
 
 if __name__ == '__main__':
     socketio.run(app, debug=True)

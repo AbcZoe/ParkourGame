@@ -1,121 +1,186 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>你畫我猜</title>
-    <script src="https://cdn.socket.io/4.0.1/socket.io.min.js"></script>
+    <title>遊戲頁面</title>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/socket.io/4.6.1/socket.io.min.js"></script>
     <style>
-        #canvas { border: 1px solid #000; display: none; }
-        #messages { height: 200px; overflow-y: auto; border: 1px solid #ccc; padding: 5px; margin-top: 10px; }
-        .hidden { display: none; }
+        #canvas {
+            border: 1px solid black;
+            touch-action: none; /* 移動設備上防止頁面滾動 */
+        }
     </style>
 </head>
 <body>
-    <h2>房間：{{ room_id }}</h2>
-    <h3>暱稱：{{ nickname }}</h3>
-    
-    <div id="drawer-word" class="hidden">
-        <strong>你的詞語是：</strong> <span id="word-display"></span>
+    <h1>遊戲中</h1>
+    <p>你好，{{ nickname }}！</p>
+    <p>目前畫家：<span id="drawer_name">-</span></p>
+    <p>倒數計時：<span id="timer">-</span> 秒</p>
+
+    <div id="drawer_area" style="display:none;">
+        <h3>你是畫家！請畫出單字：</h3>
+        <p><strong>單字：</strong> <span id="word"></span></p>
+
+        <canvas id="canvas" width="600" height="400"></canvas>
+        <br>
+        <button onclick="clearCanvas()">清除畫布</button>
     </div>
 
-    <canvas id="canvas" width="500" height="400"></canvas>
-
-    <div id="guess-box">
-        <input id="guess-input" placeholder="輸入你的猜測..." autocomplete="off">
-        <button onclick="submitGuess()">送出</button>
+    <div id="guess_area">
+        <h3>猜詞區</h3>
+        <input type="text" id="guess_input" placeholder="輸入你猜的詞">
+        <button onclick="sendGuess()">送出猜詞</button>
     </div>
 
-    <div id="messages"></div>
-    
-    <div id="scores" class="hidden">
-        <h3>遊戲結束，成績：</h3>
-        <ul id="score-list"></ul>
+    <div id="messages" style="max-height: 200px; overflow-y: auto; border: 1px solid #ccc; margin-top:10px; padding:5px;"></div>
+
+    <div id="continue_vote" style="display:none;">
+        <p>是否繼續下一輪？</p>
+        <button onclick="voteContinue(true)">是</button>
+        <button onclick="voteContinue(false)">否</button>
     </div>
 
     <script>
         const socket = io();
-        const roomId = "{{ room_id }}";
-        const nickname = "{{ nickname }}";
 
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
         let drawing = false;
+        let lastX = 0;
+        let lastY = 0;
 
-        socket.emit('join_room', { room_id: roomId });
-
-        // 畫圖功能
-        canvas.addEventListener('mousedown', e => {
+        // 繪圖事件，只允許畫家畫
+        canvas.addEventListener('mousedown', (e) => {
             drawing = true;
-            ctx.beginPath();
-            ctx.moveTo(e.offsetX, e.offsetY);
+            [lastX, lastY] = [e.offsetX, e.offsetY];
         });
-
-        canvas.addEventListener('mousemove', e => {
-            if (drawing) {
-                ctx.lineTo(e.offsetX, e.offsetY);
-                ctx.stroke();
-                socket.emit('drawing_data', {
-                    room_id: roomId,
-                    draw_data: { x: e.offsetX, y: e.offsetY }
-                });
-            }
-        });
-
         canvas.addEventListener('mouseup', () => drawing = false);
+        canvas.addEventListener('mouseout', () => drawing = false);
+        canvas.addEventListener('mousemove', draw);
 
-        socket.on('your_turn_to_draw', data => {
-            document.getElementById('drawer-word').classList.remove('hidden');
-            document.getElementById('word-display').innerText = data.word;
-            canvas.style.display = 'block';
-            canvas.addEventListener('mousedown', startDraw);
+        // 手機觸控支援
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const rect = canvas.getBoundingClientRect();
+            lastX = touch.clientX - rect.left;
+            lastY = touch.clientY - rect.top;
+            drawing = true;
+        });
+        canvas.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            drawing = false;
+        });
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            if (!drawing) return;
+            const touch = e.touches[0];
+            const rect = canvas.getBoundingClientRect();
+            const x = touch.clientX - rect.left;
+            const y = touch.clientY - rect.top;
+            drawLine(lastX, lastY, x, y);
+            lastX = x;
+            lastY = y;
+
+            // 傳送繪圖資料給後端
+            socket.emit('drawing', {x0: lastX, y0: lastY, x1: x, y1: y});
         });
 
-        socket.on('game_started', data => {
-            document.getElementById('drawer-word').classList.add('hidden');
-            canvas.style.display = 'none';
-            logMessage(data.msg);
-        });
-
-        socket.on('update_drawing', data => {
-            const { x, y } = data.draw_data;
-            ctx.lineTo(x, y);
-            ctx.stroke();
-        });
-
-        function submitGuess() {
-            const guess = document.getElementById('guess-input').value;
-            socket.emit('guess_word', { room_id: roomId, guess: guess });
-            document.getElementById('guess-input').value = '';
+        function draw(e) {
+            if (!drawing) return;
+            const x = e.offsetX;
+            const y = e.offsetY;
+            drawLine(lastX, lastY, x, y);
+            // 傳送繪圖資料給後端
+            socket.emit('drawing', {x0: lastX, y0: lastY, x1: x, y1: y});
+            [lastX, lastY] = [x, y];
         }
 
-        socket.on('guess_result', data => {
-            logMessage(`${data.player} 猜了：${data.guess}`);
+        function drawLine(x0, y0, x1, y1, color = 'black', emit = false) {
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(x0, y0);
+            ctx.lineTo(x1, y1);
+            ctx.stroke();
+            ctx.closePath();
+        }
+
+        // 清除畫布
+        function clearCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        // 接收後端繪圖資料，繪製到畫布
+        socket.on('drawing', (data) => {
+            drawLine(data.x0, data.y0, data.x1, data.y1);
         });
 
-        socket.on('correct_guess', data => {
-            logMessage(`${data.player} 猜對了！答案是：${data.word}`);
-        });
-
-        socket.on('game_over', data => {
-            const scores = data.scores;
-            const scoreList = document.getElementById('score-list');
-            scoreList.innerHTML = '';
-            for (const player in scores) {
-                const li = document.createElement('li');
-                li.textContent = `${player}: ${scores[player]} 分`;
-                scoreList.appendChild(li);
+        function sendGuess() {
+            const guess = document.getElementById('guess_input').value.trim();
+            if (guess) {
+                socket.emit('guess_word', {guess: guess});
+                document.getElementById('guess_input').value = '';
             }
-            document.getElementById('scores').classList.remove('hidden');
-            document.getElementById('guess-box').classList.add('hidden');
-        });
+        }
 
-        function logMessage(msg) {
+        function voteContinue(decision) {
+            socket.emit('vote_continue', {continue: decision});
+            document.getElementById('continue_vote').style.display = 'none';
+            addMessage('你已投票：' + (decision ? '繼續' : '結束'));
+        }
+
+        function addMessage(msg) {
             const div = document.getElementById('messages');
             const p = document.createElement('p');
             p.textContent = msg;
             div.appendChild(p);
             div.scrollTop = div.scrollHeight;
         }
+
+        socket.on('your_turn_to_draw', function(data) {
+            document.getElementById('drawer_name').textContent = '{{ nickname }} (你)';
+            document.getElementById('word').textContent = data.word;
+            document.getElementById('drawer_area').style.display = 'block';
+            clearCanvas();
+            addMessage('你是畫家，開始畫圖吧！');
+        });
+
+        socket.on('game_started', function(data) {
+            document.getElementById('drawer_name').textContent = data.msg.split(' ')[0];
+            document.getElementById('drawer_area').style.display = 'none';
+            clearCanvas();
+            addMessage(data.msg);
+        });
+
+        socket.on('timer_update', function(data) {
+            document.getElementById('timer').textContent = data.time;
+        });
+
+        socket.on('correct_guess', function(data) {
+            addMessage(`${data.guesser} 猜中了單字！單字是 "${data.word}"。`);
+        });
+
+        socket.on('round_timeout', function(data) {
+            addMessage(`時間到！畫家 ${data.drawer} 的單字是 "${data.word}"。`);
+        });
+
+        socket.on('ask_continue', function(data) {
+            addMessage('請投票決定是否繼續下一輪。');
+            document.getElementById('continue_vote').style.display = 'block';
+        });
+
+        socket.on('continue_game', function() {
+            addMessage('遊戲繼續，新一輪開始！');
+            document.getElementById('continue_vote').style.display = 'none';
+        });
+
+        socket.on('game_over', function(data) {
+            addMessage('遊戲結束，最終得分：');
+            for (const player in data.scores) {
+                addMessage(`${player} : ${data.scores[player]} 分`);
+            }
+            document.getElementById('continue_vote').style.display = 'none';
+        });
     </script>
 </body>
 </html>
