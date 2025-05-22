@@ -1,16 +1,17 @@
-from flask import Flask, render_template, request, redirect, url_for, session
+from flask import Flask, render_template, request, redirect, url_for, session, g
 from flask_session import Session
 from flask_socketio import SocketIO, emit, join_room, leave_room
 import bcrypt
 import db_config
 import random
 import time
+import os
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'your_secret_key_here'
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your_secret_key_here')
 app.config['SESSION_TYPE'] = 'filesystem'
 Session(app)
-socketio = SocketIO(app, manage_session=False)
+socketio = SocketIO(app, manage_session=False, async_mode="eventlet")
 
 WORDS = ["apple", "banana", "cat", "dog", "elephant", "flower", "guitar", "house", "icecream"]
 online_users = set()
@@ -19,7 +20,7 @@ nickname_to_sid = {}
 
 game_state = {
     'players': [],
-    'current_turn': 0,
+    'current_turn': -1,
     'scores': {},
     'rounds_played': set(),
     'drawer': None,
@@ -31,19 +32,23 @@ game_state = {
     'started': False
 }
 
+@app.teardown_appcontext
+def teardown_db(exception):
+    db_config.close_db()
+
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
         username = request.form['username']
         nickname = request.form['nickname']
         password = request.form['password'].encode('utf-8')
-
+        if not username or not nickname or not password:
+            return "請填寫所有欄位", 400
         db = db_config.get_db()
         cursor = db.cursor()
         cursor.execute("SELECT * FROM users WHERE username=%s", (username,))
         if cursor.fetchone():
             return "帳號已存在", 400
-
         hashed = bcrypt.hashpw(password, bcrypt.gensalt())
         cursor.execute("INSERT INTO users (username, password, nickname, score) VALUES (%s,%s,%s,%s)",
                        (username, hashed, nickname, 0))
@@ -56,19 +61,16 @@ def login():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password'].encode('utf-8')
-
         db = db_config.get_db()
         cursor = db.cursor()
         cursor.execute("SELECT * FROM users WHERE username=%s", (username,))
         user = cursor.fetchone()
-
         if user and bcrypt.checkpw(password, user['password'].encode('utf-8')):
             session['user_id'] = user['id']
             session['nickname'] = user['nickname']
             return redirect(url_for('lobby'))
         else:
             return "帳號或密碼錯誤", 400
-
     return render_template('index.html')
 
 @app.route('/logout')
@@ -115,6 +117,10 @@ def handle_disconnect():
             game_state['guessed'] = False
             game_state['rounds_played'].add(nickname)
             socketio.start_background_task(start_game_round)
+    online_users.discard(nickname)
+    sid_to_nickname.pop(sid, None)
+    nickname_to_sid.pop(nickname, None)
+    socketio.emit('update_user_list', list(online_users), broadcast=True)
 
 @socketio.on('start_game')
 def handle_start_game():
@@ -143,8 +149,10 @@ def start_game_round():
         game_state['continue_votes'] = {}
         return
 
-    while game_state['players'][game_state['current_turn']] in game_state['rounds_played']:
+    while True:
         game_state['current_turn'] = (game_state['current_turn'] + 1) % len(game_state['players'])
+        if game_state['players'][game_state['current_turn']] not in game_state['rounds_played']:
+            break
 
     drawer = game_state['players'][game_state['current_turn']]
     word = random.choice(WORDS)
@@ -179,7 +187,6 @@ def timer_countdown(drawer):
             'drawer': drawer,
             'word': game_state['word']
         }, broadcast=True)
-        game_state['current_turn'] = (game_state['current_turn'] + 1) % len(game_state['players'])
         socketio.start_background_task(start_game_round)
 
 @socketio.on('guess_word')
@@ -206,7 +213,6 @@ def handle_guess_word(data):
             'word': game_state['word']
         }, broadcast=True)
 
-        game_state['current_turn'] = (game_state['current_turn'] + 1) % len(game_state['players'])
         socketio.start_background_task(start_game_round)
 
 @socketio.on('vote_continue')
@@ -218,7 +224,7 @@ def handle_vote_continue(data):
     if len(game_state['continue_votes']) == len(game_state['waiting_continue']):
         if all(v is True for v in game_state['continue_votes'].values()):
             game_state['rounds_played'] = set()
-            game_state['current_turn'] = 0
+            game_state['current_turn'] = -1
             socketio.emit('continue_game', {}, broadcast=True)
             socketio.start_background_task(start_game_round)
         else:
@@ -229,7 +235,7 @@ def reset_game():
     global game_state
     game_state = {
         'players': [],
-        'current_turn': 0,
+        'current_turn': -1,
         'scores': {},
         'rounds_played': set(),
         'drawer': None,
@@ -244,11 +250,9 @@ def reset_game():
 # 畫布繪圖事件: 畫家傳送畫筆座標、顏色等，廣播給其他玩家
 @socketio.on('drawing')
 def handle_drawing(data):
-    # 只廣播給非畫家，讓他們看到畫的線條
     nickname = session.get('nickname')
     if nickname != game_state['drawer']:
         return
-    # 廣播給所有除了畫家本人的連線
     for player in game_state['players']:
         if player != nickname:
             sid = nickname_to_sid.get(player)
@@ -267,4 +271,6 @@ def handle_clear_canvas():
                 socketio.emit('clear_canvas', room=sid)
 
 if __name__ == '__main__':
+    import eventlet
+    eventlet.monkey_patch()
     socketio.run(app, debug=True)

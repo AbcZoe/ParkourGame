@@ -11,7 +11,29 @@
         #tools {
             margin-top: 10px;
         }
+        body {
+            font-family: 'Microsoft JhengHei', Arial, sans-serif;
+            background: #f7f7f7;
+            text-align: center;
+        }
+        #drawingBoard {
+            background: #fff;
+            box-shadow: 0 0 10px #ccc;
+        }
+        .btn {
+            padding: 6px 16px;
+            margin: 5px;
+            border: none;
+            background: #4caf50;
+            color: #fff;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .btn:hover {
+            background: #388e3c;
+        }
     </style>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 </head>
 <body>
     <h1>歡迎，{{ nickname }}！</h1>
@@ -21,11 +43,12 @@
     <canvas id="drawingBoard" width="800" height="600"></canvas>
 
     <div id="tools">
-        <button onclick="clearCanvas()">清除畫布</button>
+        <button class="btn" onclick="clearCanvas()">清除畫布</button>
+        <button class="btn" onclick="window.location.href='/lobby'">回大廳</button>
     </div>
 
-    <input type="text" id="guessInput" placeholder="輸入你的猜測" />
-    <button onclick="submitGuess()">猜！</button>
+    <input type="text" id="guessInput" placeholder="輸入你的猜測" autocomplete="off" />
+    <button class="btn" onclick="submitGuess()">猜！</button>
 
     <script>
         const socket = io();

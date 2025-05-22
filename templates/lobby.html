@@ -1,16 +1,51 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta charset="UTF-8">
     <title>遊戲大廳</title>
+    <style>
+        body {
+            font-family: 'Microsoft JhengHei', Arial, sans-serif;
+            background: #f7f7f7;
+            text-align: center;
+        }
+        .btn {
+            padding: 6px 16px;
+            margin: 5px;
+            border: none;
+            background: #4caf50;
+            color: #fff;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .btn:hover {
+            background: #388e3c;
+        }
+        #user_list {
+            display: inline-block;
+            text-align: left;
+        }
+        #rank {
+            margin-top: 20px;
+            display: inline-block;
+            text-align: left;
+        }
+    </style>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 </head>
 <body>
     <h1>歡迎 {{ nickname }} 來到大廳</h1>
-    <a href="/logout">登出</a>
+    <a href="/logout" class="btn">登出</a>
 
     <h2>線上使用者</h2>
     <ul id="user_list"></ul>
 
-    <button id="start_game_btn" onclick="startGame()">開始遊戲</button>
+    <button id="start_game_btn" class="btn" onclick="startGame()">開始遊戲</button>
+
+    <div id="rank">
+        <h2>排行榜</h2>
+        <ol id="rank_list"></ol>
+    </div>
 
     <script>
         const socket = io();
@@ -33,6 +68,19 @@
             alert(data.msg);
             window.location.href = '/game';
         });
+
+        // 排行榜假資料，建議後端提供 API
+        function updateRank(rankData) {
+            const ol = document.getElementById('rank_list');
+            ol.innerHTML = '';
+            rankData.forEach(item => {
+                const li = document.createElement('li');
+                li.textContent = `${item.nickname}：${item.score}`;
+                ol.appendChild(li);
+            });
+        }
+        // 範例：可用 socket 或 AJAX 取得排行榜資料
+        // updateRank([{nickname:'玩家A',score:100},{nickname:'玩家B',score:80}]);
     </script>
 </body>
 </html>
