@@ -244,5 +244,16 @@ def handle_drawing(data):
             if sid:
                 socketio.emit('drawing', data, room=sid)
 
+@socketio.on('clear_canvas')
+def handle_clear_canvas():
+    nickname = session.get('nickname')
+    if nickname != game_state['drawer']:
+        return
+    for player in game_state['players']:
+        if player != nickname:
+            sid = nickname_to_sid.get(player)
+            if sid:
+                socketio.emit('clear_canvas', room=sid)
+
 if __name__ == '__main__':
     socketio.run(app, debug=True)
