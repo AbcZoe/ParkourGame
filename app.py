@@ -104,16 +104,27 @@ def handle_connect():
 def handle_disconnect():
     sid = request.sid
     nickname = sid_to_nickname.get(sid)
-    if nickname:
-        online_users.discard(nickname)
-        sid_to_nickname.pop(sid, None)
-        nickname_to_sid.pop(nickname, None)
-
-        socketio.emit('update_user_list', list(online_users), broadcast=True)
+    if nickname in game_state['players']:
+        game_state['players'].remove(nickname)
+        game_state['scores'].pop(nickname, None)
+        if nickname == game_state['drawer']:
+            socketio.emit('round_timeout', {
+                'drawer': nickname,
+                'word': game_state['word']
+            }, broadcast=True)
+            game_state['guessed'] = False
+            game_state['rounds_played'].add(nickname)
+            socketio.start_background_task(start_game_round)
 
 @socketio.on('start_game')
 def handle_start_game():
-    nickname = session['nickname']
+    sid = request.sid
+    nickname = sid_to_nickname.get(sid)
+    print("start_game triggered by", nickname)
+
+    if not nickname:
+        return
+
     if nickname not in game_state['players']:
         game_state['players'].append(nickname)
         game_state['scores'][nickname] = 0
