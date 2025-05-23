@@ -9,7 +9,7 @@ def register(socketio, online_users, sid_to_nickname):
             return  # 未登入者不可發言
         message = data.get('message', '').strip()
         if message:
-            emit('receive_message', {'nickname': nickname, 'message': message}, broadcast=True)
+            emit('receive_message', {'nickname': nickname, 'message': message})
 
     @socketio.on('join_chat')
     def handle_join_chat():
@@ -20,4 +20,4 @@ def register(socketio, online_users, sid_to_nickname):
         sid_to_nickname[sid] = nickname
         join_room('chat')
         # 可選：發送歷史訊息或歡迎訊息
-        # emit('receive_message', {'nickname': '系統', 'message': f'{nickname} 加入聊天室'}, room='chat')
+        emit('receive_message', {'nickname': '系統', 'message': f'{nickname} 加入聊天室'}, room='chat')

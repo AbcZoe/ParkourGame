@@ -2,6 +2,7 @@ import random
 import time
 from flask_socketio import emit
 
+
 WORDS = ["apple", "banana", "cat", "dog", "elephant", "flower", "guitar", "house", "icecream"]
 
 def get_initial_game_state():
@@ -21,7 +22,7 @@ def get_initial_game_state():
 
 def start_game_round(game_state, nickname_to_sid, socketio):
     if len(game_state['rounds_played']) == len(game_state['players']):
-        socketio.emit('ask_continue', {'scores': game_state['scores']}, broadcast=True)
+        socketio.emit('ask_continue', {'scores': game_state['scores']})
         game_state['waiting_continue'] = set(game_state['players'])
         game_state['continue_votes'] = {}
         return
@@ -48,10 +49,11 @@ def start_game_round(game_state, nickname_to_sid, socketio):
             socketio.emit('game_started', {'msg': f'{drawer} is drawing!'}, room=sid)
 
     socketio.start_background_task(timer_countdown, game_state, drawer, socketio)
+    
 
-def timer_countdown(game_state, drawer, socketio):
+def timer_countdown(game_state, drawer, socketio, nickname_to_sid):
     for remaining in range(180, 0, -1):
-        socketio.emit('timer_update', {'time': remaining}, broadcast=True)
+        socketio.emit('timer_update', {'time': remaining})
         time.sleep(1)
         if game_state.get('guessed'):
             return

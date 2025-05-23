@@ -55,5 +55,5 @@ socket_events.register(socketio, session, online_users, sid_to_nickname, nicknam
 chat_events.register(socketio, online_users, sid_to_nickname)
 
 if __name__ == '__main__':
-    socketio.run(app, debug=True)
+    socketio.run(app, debug=True,host='0.0.0.0')
 
