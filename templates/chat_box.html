@@ -1,0 +1,12 @@
+<!-- 聊天室元件，可 include 到各頁面 -->
+<div id="chatContainer" style="position:fixed; top:0; right:0; height:100vh; width:320px; z-index:9999; display:flex; flex-direction:column;">
+    <button id="chatToggleBtn" onclick="toggleChat()" style="align-self:flex-end; margin:4px;">隱藏聊天室</button>
+    <div id="chatBox" style="flex:1; background:#fff; border-left:1px solid #ccc; display:flex; flex-direction:column;">
+        <ul id="chatList" style="flex:1; overflow-y:auto; list-style:none; margin:0; padding:8px;"></ul>
+        <div style="display:flex; border-top:1px solid #eee;">
+            <input id="chatInput" type="text" placeholder="輸入訊息..." style="flex:1; border:none; padding:8px; outline:none;" autocomplete="off" />
+            <button onclick="sendMessage()" style="border:none; background:#4caf50; color:#fff; padding:8px 12px;">送出</button>
+        </div>
+    </div>
+</div>
+<script src="/static/chat.js"></script>

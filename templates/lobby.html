@@ -2,15 +2,33 @@
 <html>
 <head>
     <title>遊戲大廳</title>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 </head>
 <body>
+
+
     <h1>歡迎 {{ nickname }} 來到大廳</h1>
     <a href="/logout">登出</a>
+
+    <h2>排行榜</h2>
+    <table border="1" style="margin-bottom:16px;">
+        <tr><th>名次</th><th>暱稱</th><th>答對題數</th></tr>
+        {% for user in leaderboard %}
+        <tr>
+            <td>{{ loop.index }}</td>
+            <td>{{ user.nickname }}</td>
+            <td>{{ user.score }}</td>
+        </tr>
+        {% endfor %}
+    </table>
 
     <h2>線上使用者</h2>
     <ul id="user_list"></ul>
 
-    <button id="start_game_btn" onclick="startGame()">開始遊戲</button>
+    <!-- 修改這裡：直接跳轉到 /game -->
+    <button id="start_game_btn" onclick="goToGame()">開始遊戲</button>
+
+    {% include 'chat_box.html' %}
 
     <script>
         const socket = io();
@@ -25,14 +43,10 @@
             });
         });
 
-        function startGame() {
-            socket.emit('start_game');
-        }
-
-        socket.on('game_starting', function(data) {
-            alert(data.msg);
+        // 修改這裡：直接跳轉
+        function goToGame() {
             window.location.href = '/game';
-        });
+        }
     </script>
 </body>
 </html>

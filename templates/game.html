@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <title>你畫我猜</title>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <script src="/static/game.js"></script>
     <style>
         canvas {
             border: 1px solid black;
@@ -11,133 +13,33 @@
         #tools {
             margin-top: 10px;
         }
+        #waitingMask {
+            position: absolute;
+            left: 0; top: 0; width: 100vw; height: 100vh;
+            background: rgba(255,255,255,0.8);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 2em; z-index: 100;
+        }
     </style>
 </head>
 <body>
+
     <h1>歡迎，{{ nickname }}！</h1>
-    <h2 id="gameStatus">等待遊戲開始...</h2>
+    <h2 id="gameStatus">等待其他玩家加入...</h2>
     <p>倒數計時：<span id="timer">-</span></p>
+
+    <div id="waitingMask">等待第二位玩家加入...</div>
 
     <canvas id="drawingBoard" width="800" height="600"></canvas>
 
     <div id="tools">
-        <button onclick="clearCanvas()">清除畫布</button>
+        <button id="clearBtn" onclick="clearCanvas()" disabled>清除畫布</button>
     </div>
 
-    <input type="text" id="guessInput" placeholder="輸入你的猜測" />
-    <button onclick="submitGuess()">猜！</button>
+    <input type="text" id="guessInput" placeholder="輸入你的猜測" disabled />
+    <button id="guessBtn" onclick="submitGuess()" disabled>猜！</button>
 
-    <script>
-        const socket = io();
-        const canvas = document.getElementById('drawingBoard');
-        const ctx = canvas.getContext('2d');
-        let drawing = false;
-        let isDrawer = false;
+    {% include 'chat_box.html' %}
 
-        canvas.addEventListener('mousedown', (e) => {
-            if (!isDrawer) return;
-            drawing = true;
-            draw(e.offsetX, e.offsetY, false);
-        });
-
-        canvas.addEventListener('mousemove', (e) => {
-            if (!isDrawer || !drawing) return;
-            draw(e.offsetX, e.offsetY, true);
-        });
-
-        canvas.addEventListener('mouseup', () => drawing = false);
-        canvas.addEventListener('mouseout', () => drawing = false);
-
-        function draw(x, y, dragging) {
-            ctx.lineWidth = 2;
-            ctx.lineCap = 'round';
-            ctx.strokeStyle = 'black';
-
-            if (dragging) {
-                ctx.lineTo(x, y);
-                ctx.stroke();
-            } else {
-                ctx.beginPath();
-                ctx.moveTo(x, y);
-            }
-
-            socket.emit('drawing', { x, y, dragging });
-        }
-
-        function clearCanvas() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            if (isDrawer) {
-                socket.emit('clear_canvas');
-            }
-        }
-
-        function submitGuess() {
-            const guess = document.getElementById('guessInput').value;
-            if (guess.trim() !== '') {
-                socket.emit('guess_word', { guess });
-                document.getElementById('guessInput').value = '';
-            }
-        }
-
-        socket.on('drawing', (data) => {
-            const { x, y, dragging } = data;
-            ctx.lineWidth = 2;
-            ctx.lineCap = 'round';
-            ctx.strokeStyle = 'black';
-
-            if (dragging) {
-                ctx.lineTo(x, y);
-                ctx.stroke();
-            } else {
-                ctx.beginPath();
-                ctx.moveTo(x, y);
-            }
-        });
-
-        socket.on('clear_canvas', () => {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-        });
-
-        socket.on('your_turn_to_draw', (data) => {
-            isDrawer = true;
-            clearCanvas();
-            document.getElementById('gameStatus').innerText = `你的回合！請畫出：「${data.word}」`;
-        });
-
-        socket.on('game_started', (data) => {
-            isDrawer = false;
-            clearCanvas();
-            document.getElementById('gameStatus').innerText = data.msg;
-        });
-
-        socket.on('round_timeout', (data) => {
-            alert(`時間到！${data.drawer} 畫的是：「${data.word}」`);
-        });
-
-        socket.on('correct_guess', (data) => {
-            alert(`${data.guesser} 猜對了！答案是「${data.word}」`);
-        });
-
-        socket.on('timer_update', (data) => {
-            document.getElementById('timer').innerText = data.time;
-        });
-
-        socket.on('ask_continue', (data) => {
-            let result = confirm(`本輪結束！分數如下：\n\n${formatScores(data.scores)}\n\n要繼續下一輪嗎？`);
-            socket.emit('vote_continue', { continue: result });
-        });
-
-        socket.on('game_over', (data) => {
-            alert(`遊戲結束！最終分數：\n\n${formatScores(data.scores)}`);
-            location.href = '/lobby';
-        });
-
-        function formatScores(scores) {
-            return Object.entries(scores).map(([player, score]) => `${player}：${score}`).join('\n');
-        }
-
-        // 自動啟動遊戲（只在第一位玩家會觸發）
-        socket.emit('start_game');
-    </script>
 </body>
 </html>
