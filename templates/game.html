@@ -4,40 +4,13 @@
     <meta charset="UTF-8">
     <title>你畫我猜</title>
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
-    <script src="/static/game.js"></script>
     <style>
-        canvas {
-            border: 1px solid black;
-            cursor: crosshair;
-        }
-        #tools {
-            margin-top: 10px;
-        }
-        #waitingMask {
-            position: absolute;
-            left: 0; top: 0; width: 100vw; height: 100vh;
-            background: rgba(255,255,255,0.8);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 2em; z-index: 100;
-        }
+        
     </style>
 </head>
 <body>
 
     <h1>歡迎，{{ nickname }}！</h1>
-    <h2 id="gameStatus">等待其他玩家加入...</h2>
-    <p>倒數計時：<span id="timer">-</span></p>
-
-    <div id="waitingMask">等待第二位玩家加入...</div>
-
-    <canvas id="drawingBoard" width="800" height="600"></canvas>
-
-    <div id="tools">
-        <button id="clearBtn" onclick="clearCanvas()" disabled>清除畫布</button>
-    </div>
-
-    <input type="text" id="guessInput" placeholder="輸入你的猜測" disabled />
-    <button id="guessBtn" onclick="submitGuess()" disabled>猜！</button>
 
     {% include 'chat_box.html' %}
 
