@@ -1,18 +1,54 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-    <meta charset="UTF-8">
-    <title>你畫我猜</title>
-    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
-    <style>
-        
-    </style>
+  <meta charset="UTF-8">
+  <title>你畫我猜</title>
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 </head>
 <body>
 
-    <h1>歡迎，{{ nickname }}！</h1>
+  <h1>歡迎，{{ nickname }}！</h1>
+  
+  <div id="game" style="display:none;">
+    <p id="status"></p>
+    猜一個數字（1~100）：<input id="guess">
+    <button onclick="submitGuess()">送出</button>
+    <ul id="messages"></ul>
+  </div>
 
-    {% include 'chat_box.html' %}
+  <script>
+    const socket = io();
+    let myName = "{{ nickname }}";
+
+    function join() {
+      if (myName) {
+        socket.emit('join', { name: myName });
+        document.getElementById('game').style.display = 'block';
+        document.getElementById('status').innerText = '⏳ 等待另一位玩家...';
+      }
+    }
+
+    function submitGuess() {
+      const g = document.getElementById('guess').value;
+      if (g) {
+        socket.emit('guess', { guess: g });
+        document.getElementById('guess').value = '';
+      }
+    }
+
+    socket.on('message', msg => {
+      const li = document.createElement('li');
+      li.innerText = msg;
+      document.getElementById('messages').appendChild(li);
+      if (msg.includes('遊戲開始')) {
+        document.getElementById('status').innerText = '🎯 遊戲開始！請輸入你的猜測';
+      }
+    });
+
+    window.onload = join;
+  </script>
+
+  {% include 'chat_box.html' %}
 
 </body>
 </html>

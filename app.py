@@ -1,9 +1,10 @@
 from flask import Flask, render_template, request, redirect, url_for, session
 from flask_session import Session
-from flask_socketio import SocketIO
+from flask_socketio import SocketIO, emit
 import db_config
 from user_service import register_user, login_user
 import chat_events
+import random
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your_secret_key_here'
@@ -74,6 +75,63 @@ def handle_disconnect():
 
 # SocketIO事件註冊
 chat_events.register(socketio, online_users, sid_to_nickname)
+
+number_to_guess = 0
+game_started = False
+players = {}
+player_list = []
+
+@socketio.on('join')
+def on_join(data):
+    global game_started, number_to_guess
+    sid = request.sid
+    name = data['name']
+    players[sid] = name
+    if sid not in player_list:
+        player_list.append(sid)
+    emit('message', f"{name} 加入遊戲 ({len(players)}/2)", broadcast=True)
+
+    if len(player_list) == 2 and not game_started:
+        number_to_guess = random.randint(1, 100)
+        game_started = True
+        emit('message', "🎮 遊戲開始！請在 1~100 之間猜數字。", broadcast=True)
+
+@socketio.on('guess')
+def on_guess(data):
+    global number_to_guess, game_started
+    sid = request.sid
+    guess = int(data['guess'])
+    name = players.get(sid, '匿名')
+
+    if not game_started:
+        emit('message', "⏳ 等待兩人以上加入...", to=sid)
+        return
+
+    if guess == number_to_guess:
+        emit('message', f"🎉 {name} 猜中了正確數字 {number_to_guess}！", broadcast=True)
+         # 更新資料庫中的分數
+        try:
+            db = db_config.get_db()
+            cursor = db.cursor()
+            cursor.execute("UPDATE users SET score = score + 1 WHERE nickname = %s", (name,))
+            db.commit()
+            cursor.close()
+        except Exception as e:
+            print(f"資料庫更新錯誤: {e}")
+
+        reset_game()
+    elif guess < number_to_guess:
+        emit('message', f"{name} 猜 {guess} 太小了。", broadcast=True)
+    else:
+        emit('message', f"{name} 猜 {guess} 太大了。", broadcast=True)
+
+def reset_game():
+    global players, player_list, number_to_guess, game_started
+    players = {}
+    player_list = []
+    number_to_guess = 0
+    game_started = False
+
 
 if __name__ == '__main__':
     socketio.run(app, debug=True)
