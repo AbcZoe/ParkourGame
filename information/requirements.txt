@@ -5,3 +5,8 @@ eventlet==0.35.1
 mysql-connector-python==8.3.0
 
 在本機測試時要兩個不同的瀏覽器開
+
+mysql
+netgame
+    users
+        id username password nickname score

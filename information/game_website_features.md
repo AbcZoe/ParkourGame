@@ -33,7 +33,7 @@
 
 ## 🧩 遊戲進行模組
 
-- 遊戲邏輯（你畫我猜，單人時就與 ai玩）
+- 遊戲邏輯（猜數字）
 - 即時遊戲狀態同步（玩家操作即時傳送至其他用戶）
 - 支援多位玩家互動
 - 遊戲結束、勝負判定、積分更新
@@ -63,22 +63,3 @@
 - Session 驗證避免未登入操作遊戲
 
 ---
-
-## 📁 目錄架構
-NetGame/
-│
-├─ app.py                  # 主入口，負責路由、SocketIO事件註冊
-├─ db_config.py            # 資料庫連線與關閉
-├─ game_logic.py           # 遊戲邏輯（回合、倒數、狀態管理）
-├─ user_service.py         # 使用者相關操作（註冊、登入、查詢等）
-├─ socket_events.py        # SocketIO事件處理（可選，讓 app.py 更精簡）
-│
-├─ static/
-│    └─ game.js            # 前端遊戲邏輯
-│
-├─ templates/
-│    ├─ index.html
-│    ├─ lobby.html
-│    └─ game.html
-│
-└─ requirements.txt        # 套件需求
