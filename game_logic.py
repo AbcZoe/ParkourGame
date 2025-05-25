@@ -48,12 +48,12 @@ def start_game_round(game_state, nickname_to_sid, socketio):
         else:
             socketio.emit('game_started', {'msg': f'{drawer} is drawing!'}, room=sid)
 
-    socketio.start_background_task(timer_countdown, game_state, drawer, socketio)
+    socketio.start_background_task(timer_countdown, game_state, drawer, socketio, nickname_to_sid)
     
 
 def timer_countdown(game_state, drawer, socketio, nickname_to_sid):
     for remaining in range(180, 0, -1):
-        socketio.emit('timer_update', {'time': remaining})
+        socketio.emit('timer_update', {'time': remaining}, broadcast=True)
         time.sleep(1)
         if game_state.get('guessed'):
             return

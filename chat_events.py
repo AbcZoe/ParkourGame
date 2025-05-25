@@ -9,7 +9,7 @@ def register(socketio, online_users, sid_to_nickname):
             return  # 未登入者不可發言
         message = data.get('message', '').strip()
         if message:
-            emit('receive_message', {'nickname': nickname, 'message': message})
+            emit('receive_message', {'nickname': nickname, 'message': message}, room='chat')
 
     @socketio.on('join_chat')
     def handle_join_chat():
