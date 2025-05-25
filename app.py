@@ -3,8 +3,6 @@ from flask_session import Session
 from flask_socketio import SocketIO
 import db_config
 from user_service import register_user, login_user
-from game_logic import get_initial_game_state
-import socket_events
 import chat_events
 
 app = Flask(__name__)
@@ -17,7 +15,6 @@ socketio = SocketIO(app, manage_session=False)
 online_users = set()
 sid_to_nickname = {}
 nickname_to_sid = {}
-game_state = get_initial_game_state()
 
 # 路由
 @app.route('/register', methods=['GET', 'POST'])
@@ -50,8 +47,32 @@ def game():
         return redirect(url_for('login'))
     return render_template('game.html', nickname=session['nickname'])
 
+@socketio.on('connect')
+def handle_connect(auth):
+    nickname = session.get('nickname')
+    sid = request.sid
+    print(f"[CONNECT] SID={sid}, Nickname from session: {nickname}")
+    if not nickname:
+        return
+    online_users.add(nickname)
+    sid_to_nickname[sid] = nickname
+    nickname_to_sid[nickname] = sid
+
+    # 更新大廳線上名單
+    socketio.emit('update_user_list', list(online_users))
+
+@socketio.on('disconnect')
+def handle_disconnect():
+    sid = request.sid
+    nickname = sid_to_nickname.get(sid)
+    if nickname:
+        online_users.discard(nickname)
+        sid_to_nickname.pop(sid, None)
+        nickname_to_sid.pop(nickname, None)
+        # 更新大廳線上名單
+        socketio.emit('update_user_list', list(online_users))
+
 # SocketIO事件註冊
-socket_events.register(socketio, session, online_users, sid_to_nickname, nickname_to_sid, game_state)
 chat_events.register(socketio, online_users, sid_to_nickname)
 
 if __name__ == '__main__':
