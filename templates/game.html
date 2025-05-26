@@ -39,7 +39,6 @@
     }
 
     socket.on('set_asker', data => {
-      console.log('收到 set_asker', data, 'my sid:', socket.id);
       const askerSid = data.asker_sid;
       const mySid = socket.id;
       const isAsker = mySid === askerSid;
