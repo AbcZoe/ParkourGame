@@ -76,7 +76,8 @@ def handle_disconnect():
 # SocketIO事件註冊
 chat_events.register(socketio, online_users, sid_to_nickname)
 
-number_to_guess = 0
+Asker=''
+Answer=''
 game_started = False
 players = {}
 player_list = []
@@ -92,23 +93,36 @@ def on_join(data):
     emit('message', f"{name} 加入遊戲 ({len(players)}/2)", broadcast=True)
 
     if len(player_list) == 2 and not game_started:
-        number_to_guess = random.randint(1, 100)
+        Asker=player_list[random.randint(0,len(player_list))]
         game_started = True
-        emit('message', "🎮 遊戲開始！請在 1~100 之間猜數字。", broadcast=True)
+        emit('message', "🎮 遊戲開始！請根據特徵猜出物品。", broadcast=True)
+
+@socketio.on('question')
+def Ask_question(data):
+    global game_started
+    sid = request.sid
+    if not game_started:
+        emit('message', "⏳ 等待兩人以上加入...", to=sid)
+        return
+    Answer=data
+    name=Asker
+    emit('message', f"出題者:{name}", broadcast=True)
+    
+    
 
 @socketio.on('guess')
 def on_guess(data):
-    global number_to_guess, game_started
+    global game_started
     sid = request.sid
-    guess = int(data['guess'])
+    guess = data['guess']
     name = players.get(sid, '匿名')
 
     if not game_started:
         emit('message', "⏳ 等待兩人以上加入...", to=sid)
         return
 
-    if guess == number_to_guess:
-        emit('message', f"🎉 {name} 猜中了正確數字 {number_to_guess}！", broadcast=True)
+    if guess == Answer:
+        emit('message', f"🎉 {name} 猜中了 {number_to_guess}！", broadcast=True)
          # 更新資料庫中的分數
         try:
             db = db_config.get_db()
@@ -120,13 +134,13 @@ def on_guess(data):
             print(f"資料庫更新錯誤: {e}")
 
         reset_game()
-    elif guess < number_to_guess:
-        emit('message', f"{name} 猜 {guess} 太小了。", broadcast=True)
-    else:
-        emit('message', f"{name} 猜 {guess} 太大了。", broadcast=True)
+    elif guess != number_to_guess:
+        emit('message', f"{name} 猜 {guess} ，猜錯了。", broadcast=True)
 
 def reset_game():
-    global players, player_list, number_to_guess, game_started
+    global Asker,Answer,players, player_list, game_started
+    Asker=''
+    Answer=''
     players = {}
     player_list = []
     number_to_guess = 0

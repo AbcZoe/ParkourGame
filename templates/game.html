@@ -2,16 +2,18 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8">
-  <title>猜數字</title>
+  <title>猜謎遊戲</title>
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 </head>
 <body>
 
   <h1>歡迎，{{ nickname }}！</h1>
+
+  <a href="/lobby">回到大廳</a>
   
   <div id="game" style="display:none;">
     <p id="status"></p>
-    猜一個數字（1~100）：<input id="guess">
+    請根據特徵猜出物品：<input id="guess">
     <button onclick="submitGuess()">送出</button>
     <ul id="messages"></ul>
   </div>
