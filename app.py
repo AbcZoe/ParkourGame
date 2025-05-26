@@ -97,6 +97,7 @@ def on_join(data):
         game_started = True
         emit('message', "🎮 遊戲開始！請根據特徵猜出物品。", broadcast=True)
 
+
 @socketio.on('question')
 def Ask_question(data):
     global game_started
@@ -107,8 +108,17 @@ def Ask_question(data):
     Answer=data
     name=Asker
     emit('message', f"出題者:{name}", broadcast=True)
-    
-    
+
+@socketio.on('hint')
+def Ask_hint(data):
+    global game_started
+    sid = request.sid
+    if not game_started:
+        emit('message', "⏳ 等待兩人以上加入...", to=sid)
+        return
+    Answer=data
+    name=Asker
+    emit('message', f"出題者:{name}", broadcast=True)
 
 @socketio.on('guess')
 def on_guess(data):
@@ -122,7 +132,7 @@ def on_guess(data):
         return
 
     if guess == Answer:
-        emit('message', f"🎉 {name} 猜中了 {number_to_guess}！", broadcast=True)
+        emit('message', f"🎉{name} 猜 {guess} ，猜中了 ！", broadcast=True)
          # 更新資料庫中的分數
         try:
             db = db_config.get_db()
@@ -143,10 +153,9 @@ def reset_game():
     Answer=''
     players = {}
     player_list = []
-    number_to_guess = 0
     game_started = False
 
 
 if __name__ == '__main__':
-    socketio.run(app, debug=True,host='0.0.0.0')
+    socketio.run(app, debug=True)
 
