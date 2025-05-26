@@ -63,7 +63,8 @@ def handle_connect(auth):
     socketio.emit('update_user_list', list(online_users))
 
 @socketio.on('disconnect')
-def handle_disconnect():
+def handle_disconnect(auth):
+    global Asker
     sid = request.sid
     nickname = sid_to_nickname.get(sid)
     if nickname:
@@ -72,6 +73,9 @@ def handle_disconnect():
         nickname_to_sid.pop(nickname, None)
         # 更新大廳線上名單
         socketio.emit('update_user_list', list(online_users))
+    if sid == Asker:
+        emit('message', f"⚠️ 出題者 {nickname} 離開，重新開始遊戲")
+        reset_game()
 
 # SocketIO事件註冊
 chat_events.register(socketio, online_users, sid_to_nickname)
@@ -90,24 +94,26 @@ def on_join(data):
     players[sid] = name
     if sid not in player_list:
         player_list.append(sid)
-    emit('message', f"{name} 加入遊戲 ({len(players)}/2)", broadcast=True)
+    emit('message', f"{name} 加入遊戲", broadcast=True)
 
     if len(player_list) == 2 and not game_started:
-        Asker=player_list[random.randint(0,len(player_list))]
+        Asker = random.choice(player_list)
         game_started = True
-        emit('message', "🎮 遊戲開始！請根據特徵猜出物品。", broadcast=True)
+        socketio.emit('message', "🎮 遊戲開始！請根據特徵猜出物品。")
+        # 發送出題者的 sid 給所有人
+        socketio.emit('set_asker', {'asker_sid': Asker})
 
 
 @socketio.on('question')
 def Ask_question(data):
     global Answer
     Answer = data['answer']  # 謎底
-    emit('message', f"出題者:{players.get(Asker)}", broadcast=True)
+    emit('message', f"出題者:{players.get(Asker)}")
 
 @socketio.on('hint')
 def Ask_hint(data):
     hint = data['hint']
-    emit('message', f"💡 提示：{hint}", broadcast=True)
+    emit('extraHint', f"💡 提示：{hint}")
     
 @socketio.on('guess')
 def on_guess(data):
@@ -121,7 +127,7 @@ def on_guess(data):
         return
 
     if guess == Answer:
-        emit('message', f"🎉{name} 猜 {guess} ，猜中了 ！", broadcast=True)
+        emit('message', f"🎉{name} 猜 {guess} ，猜中了 ！")
          # 更新資料庫中的分數
         try:
             db = db_config.get_db()
@@ -134,15 +140,22 @@ def on_guess(data):
 
         reset_game()
     elif guess != Answer:
-        emit('message', f"{name} 猜 {guess} ，猜錯了。", broadcast=True)
+        emit('message', f"{name} 猜 {guess} ，猜錯了。")
 
 def reset_game():
-    global Asker,Answer,players, player_list, game_started
-    Asker=''
-    Answer=''
-    players = {}
-    player_list = []
+    global Asker, Answer, game_started
+    Asker = ''
+    Answer = ''
     game_started = False
+
+    if len(player_list) >= 2:
+        Asker = random.choice(player_list)
+        game_started = True
+        socketio.emit('message', "🆕 新回合開始！")
+        socketio.emit('set_asker', {'asker_sid': Asker})
+    else:
+        socketio.emit('message', "⚠️ 人數不足，請等待更多玩家加入")
+
 
 
 if __name__ == '__main__':

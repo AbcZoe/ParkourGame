@@ -4,33 +4,55 @@
   <meta charset="UTF-8">
   <title>猜謎遊戲</title>
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
-  <script src="{{ url_for('static', filename='game.js') }}"></script>
 </head>
 <body>
   <h1>歡迎，{{ nickname }}！</h1>
   <a href="/lobby">回到大廳</a>
-  <div id="asker-panel" style="display:none;">
+  <div id="status"></div>
+  <div id="game" style="display:none;">
+    <div id="asker-panel" style="display:none;">
     <h3>你是出題者，請輸入謎底與提示：</h3>
     謎底：<input id="answer"><br>
     提示：<input id="hint"><br>
     <button onclick="submitQuestion()">送出題目</button><br>
     <input id="extraHint"><button onclick="addHint()">新增提示</button>
-  </div>
-  <div id="guess-panel" style="display:none;">
-    猜謎：<input id="guess"><button onclick="submitGuess()">送出</button>
+    </div>
+
+    <div id="guess-panel" style="display:none;">
+      猜謎：<input id="guess"><button onclick="submitGuess()">送出</button>
+    </div>
   </div>
   <ul id="messages"></ul>
   <script>
     const socket = io();
     let myName = "{{ nickname }}";
 
+    socket.on('connect', () => {
+      console.log('連線成功，socket.id:', socket.id);
+      join();
+    });
+
     function join() {
       if (myName) {
         socket.emit('join', { name: myName });
         document.getElementById('game').style.display = 'block';
-        document.getElementById('status').innerText = '⏳ 等待另一位玩家...';
       }
     }
+
+    socket.on('set_asker', data => {
+      console.log('收到 set_asker', data, 'my sid:', socket.id);
+      const askerSid = data.asker_sid;
+      const mySid = socket.id;
+      const isAsker = mySid === askerSid;
+
+      document.getElementById('asker-panel').style.display = isAsker ? 'block' : 'none';
+      document.getElementById('guess-panel').style.display = isAsker ? 'none' : 'block';
+
+      const statusText = isAsker 
+        ? '📝 你是出題者，請輸入謎底與提示。'
+        : '🔍 你是猜題者，請根據提示進行猜測。';
+      document.getElementById('status').innerText = statusText;
+    });
 
     function submitQuestion() {
       const answer = document.getElementById('answer').value;
@@ -68,7 +90,12 @@
       }
     });
 
-    window.onload = join;
+    socket.on('extraHint', hint => {
+      const li = document.createElement('li');
+      li.innerText = hint;
+      document.getElementById('messages').appendChild(li);
+    });
+
   </script>
 
   {% include 'chat_box.html' %}
