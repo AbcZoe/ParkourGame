@@ -11,17 +11,16 @@
   <div id="status"></div>
   <div id="game" style="display:none;">
     <div id="asker-panel" style="display:none;">
-    <h3>你是出題者，請輸入謎底與提示：</h3>
-    謎底：<input id="answer"><br>
-    提示：<input id="hint"><br>
-    <button onclick="submitQuestion()">送出題目</button><br>
-    <input id="extraHint"><button onclick="addHint()">新增提示</button>
+      謎底：<input id="answer"><br>
+      提示：<input id="hint"><br>
+      <button onclick="submitQuestion()">送出題目</button><br>
+      <input id="extraHint"><button onclick="addHint()">新增提示</button>
     </div>
-
     <div id="guess-panel" style="display:none;">
       猜謎：<input id="guess"><button onclick="submitGuess()">送出</button>
     </div>
   </div>
+  <ul id="Hints"></ul>
   <ul id="messages"></ul>
   <script>
     const socket = io();
@@ -93,7 +92,7 @@
     socket.on('extraHint', hint => {
       const li = document.createElement('li');
       li.innerText = hint;
-      document.getElementById('messages').appendChild(li);
+      document.getElementById('Hints').appendChild(li);
     });
 
   </script>
