@@ -84,7 +84,7 @@ player_list = []
 
 @socketio.on('join')
 def on_join(data):
-    global game_started, number_to_guess
+    global game_started,Asker
     sid = request.sid
     name = data['name']
     players[sid] = name
@@ -100,29 +100,18 @@ def on_join(data):
 
 @socketio.on('question')
 def Ask_question(data):
-    global game_started
-    sid = request.sid
-    if not game_started:
-        emit('message', "⏳ 等待兩人以上加入...", to=sid)
-        return
-    Answer=data
-    name=Asker
-    emit('message', f"出題者:{name}", broadcast=True)
+    global Answer
+    Answer = data['answer']  # 謎底
+    emit('message', f"出題者:{players.get(Asker)}", broadcast=True)
 
 @socketio.on('hint')
 def Ask_hint(data):
-    global game_started
-    sid = request.sid
-    if not game_started:
-        emit('message', "⏳ 等待兩人以上加入...", to=sid)
-        return
-    Answer=data
-    name=Asker
-    emit('message', f"出題者:{name}", broadcast=True)
-
+    hint = data['hint']
+    emit('message', f"💡 提示：{hint}", broadcast=True)
+    
 @socketio.on('guess')
 def on_guess(data):
-    global game_started
+    global game_started,Answer,Asker
     sid = request.sid
     guess = data['guess']
     name = players.get(sid, '匿名')
@@ -144,7 +133,7 @@ def on_guess(data):
             print(f"資料庫更新錯誤: {e}")
 
         reset_game()
-    elif guess != number_to_guess:
+    elif guess != Answer:
         emit('message', f"{name} 猜 {guess} ，猜錯了。", broadcast=True)
 
 def reset_game():

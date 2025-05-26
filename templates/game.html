@@ -33,19 +33,22 @@
     }
 
     function submitQuestion() {
-      const g = document.getElementById('guess').value;
-      if (g) {
-        socket.emit('question', { guess: g });
-        document.getElementById('question').value = '';
-      }
+      const answer = document.getElementById('answer').value;
+      const hint = document.getElementById('hint').value;
+      if (answer) {
+          socket.emit('question', { answer });
+      }
+      if (hint) {
+        socket.emit('hint', { hint });
+      }
     }
 
     function addHint() {
-      const g = document.getElementById('guess').value;
-      if (g) {
-        socket.emit('hint', { guess: g });
-        document.getElementById('hint').value = '';
-      }
+      const hint = document.getElementById('extraHint').value;
+      if (hint) {
+        socket.emit('hint', { hint });
+        document.getElementById('extraHint').value = '';
+      }
     }
 
     function submitGuess() {
