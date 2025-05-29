@@ -1,0 +1,19 @@
+#chatToggleBtn {
+    position: fixed;
+    top: 57px;      /* 距離頂部 16px */
+    right: 32px;    /* 距離右側 32px */
+    font-size: 1rem;
+    color: #6366f1;
+    text-decoration: none;
+    font-weight: bold;
+    z-index: 10001;  /* 比聊天室還高，永遠在最上層 */
+    background: #fff;
+    padding: 6px 16px;
+    border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(99,102,241,0.08);
+    transition: color 0.2s, background 0.2s;
+}
+#chatToggleBtn:hover {
+    color: #3b3b6d;
+    background: #e0e7ff;
+}

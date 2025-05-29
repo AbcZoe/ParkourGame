@@ -1,0 +1,96 @@
+/* 遊戲大廳 (lobby.html) */
+body {
+    font-family: 'Segoe UI', '微軟正黑體', Arial, sans-serif;
+    background: #f5f7fa;
+    margin: 0;
+    padding: 0;
+}
+
+h1 {
+    text-align: center; /* 歡迎標題置中 */
+    margin-top: 32px;
+    color: #3b3b6d;
+    letter-spacing: 2px;
+}
+
+.logout-link {
+    position: fixed;
+    top: 16px;      /* 距離頂部 16px */
+    right: 32px;    /* 距離右側 32px */
+    font-size: 1rem;
+    color: #6366f1;
+    text-decoration: none;
+    font-weight: bold;
+    z-index: 10001;  /* 比聊天室還高，永遠在最上層 */
+    background: #fff;
+    padding: 6px 16px;
+    border: 2px solid black;
+    border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(99,102,241,0.08);
+    transition: color 0.2s, background 0.2s;
+}
+.logout-link:hover {
+    color: #3b3b6d;
+    background: #e0e7ff;
+}
+
+#start_game_btn {
+    display: block;           /* 讓按鈕獨佔一行 */
+    margin: 32px auto 0 auto; /* 上方間距32px，左右自動(置中) */
+    padding: 12px 36px;
+    font-size: 1.2rem;
+    background: linear-gradient(90deg, #6366f1 60%, #818cf8 100%);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(99,102,241,0.08);
+    transition: background 0.2s, box-shadow 0.2s;
+}
+#start_game_btn:hover {
+    background: linear-gradient(90deg, #818cf8 0%, #6366f1 100%);
+    box-shadow: 0 4px 16px rgba(99,102,241,0.15);
+}
+
+/* 排行榜區塊靠右固定顯示，類似聊天室 */
+.leaderboard-section {
+    position: fixed;
+    top: 100px;          /* 距離頂部 100px，可依需求調整 */
+    left: 0;            /* 靠右 */
+    width: 320px;        /* 固定寬度，與聊天室一致 */
+    background: #fff;
+    border-radius: 10px 0 0 10px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.10);
+    padding: 16px 12px;
+    z-index: 9000;       /* 比主內容高，但低於登出/聊天室 */
+}
+
+.leaderboard-title {
+    text-align: center;
+    margin-bottom: 12px;
+}
+
+.leaderboard-section table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0 auto 16px auto;
+}
+
+.leaderboard-section th, .leaderboard-section td {
+    padding: 8px 0;
+    text-align: center;
+}
+
+/* 線上使用者區塊置中 */
+.online-users-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 24px;
+}
+#user_list {
+    padding: 0;
+    list-style: none;
+    text-align: center;
+}

@@ -3,7 +3,7 @@
 本文件說明使用 Flask、SocketIO、MySQL 與 Session 所開發之多人互動遊戲網頁的主要功能模組與細節。
 
 -- 安裝套件
-pip install Flask Flask-SocketIO Flask-Session eventlet mysql-connector-python pymysql bcrypt
+pip install Flask Flask-SocketIO Flask-Session eventlet mysql-connector-python pymysql bcrypt cryptography
 
 -- 建立資料庫
 CREATE DATABASE IF NOT EXISTS netgame CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;

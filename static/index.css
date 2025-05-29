@@ -1,0 +1,68 @@
+/* 註冊、登入、登出 (index.html) */
+body {
+    display: flex; /* 使用 flex 讓內容可置中 */
+    flex-direction: column; /* 垂直排列內容 */
+    align-items: center; /* 水平置中內容 */
+    justify-content: center; /* 垂直置中內容 */
+    min-height: 100vh; /* 最小高度佔滿整個視窗 */
+    background: linear-gradient(135deg, #e0e7ff 0%, #f5f5f5 100%); /* 背景漸層 */
+    font-family: 'Segoe UI', '微軟正黑體', Arial, sans-serif; /* 字型設定 */
+}
+
+form {
+    background: #fff; /* 表單背景白色 */
+    padding: 32px 36px; /* 內距，上下32px，左右36px */
+    border-radius: 16px; /* 圓角 */
+    box-shadow: 0 4px 24px rgba(60,60,120,0.10); /* 陰影效果 */
+    margin-bottom: 32px; /* 下方間距 */
+    min-width: 300px; /* 最小寬度 */
+    text-align: center; /* 內容置中 */
+    transition: box-shadow 0.2s; /* 陰影變化動畫 */
+}
+form:hover {
+    box-shadow: 0 8px 32px rgba(60,60,120,0.16); /* 滑鼠移上時陰影加深 */
+}
+
+h2 {
+    text-align: center; /* 標題置中 */
+    color: #3b3b6d; /* 標題顏色 */
+    margin-bottom: 18px; /* 標題下方間距 */
+    letter-spacing: 2px; /* 字距 */
+}
+
+form input[type="text"],
+form input[type="password"] {
+    width: 90%; /* 輸入框寬度 */
+    padding: 10px 12px; /* 內距 */
+    margin: 10px 0; /* 上下間距 */
+    border: 1px solid #bfc4d1; /* 邊框顏色 */
+    border-radius: 6px; /* 圓角 */
+    font-size: 1rem; /* 字體大小 */
+    outline: none; /* 移除預設外框 */
+    transition: border 0.2s; /* 邊框動畫 */
+    background: #f7f8fa; /* 輸入框背景色 */
+}
+form input[type="text"]:focus,
+form input[type="password"]:focus {
+    border: 1.5px solid #6366f1; /* 聚焦時邊框顏色加深 */
+    background: #fff; /* 聚焦時背景變白 */
+}
+
+form button {
+    margin-top: 20px; /* 與上方輸入框間距 */
+    width: 90%; /* 按鈕寬度 */
+    padding: 10px 0; /* 內距 */
+    background: linear-gradient(90deg, #6366f1 60%, #818cf8 100%); /* 漸層背景 */
+    color: #fff; /* 文字顏色 */
+    border: none; /* 無邊框 */
+    border-radius: 6px; /* 圓角 */
+    font-size: 1.1rem; /* 字體大小 */
+    font-weight: bold; /* 粗體 */
+    cursor: pointer; /* 滑鼠指標變手指 */
+    box-shadow: 0 2px 8px rgba(99,102,241,0.08); /* 陰影 */
+    transition: background 0.2s, box-shadow 0.2s; /* 動畫效果 */
+}
+form button:hover {
+    background: linear-gradient(90deg, #818cf8 0%, #6366f1 100%); /* 滑鼠移上時漸層反轉 */
+    box-shadow: 0 4px 16px rgba(99,102,241,0.15); /* 陰影加深 */
+}

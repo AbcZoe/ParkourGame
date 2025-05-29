@@ -4,10 +4,11 @@
   <meta charset="UTF-8">
   <title>猜謎遊戲</title>
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='game.css') }}">
 </head>
 <body>
-  <h1>歡迎，{{ nickname }}！</h1>
-  <a href="/lobby">回到大廳</a>
+  <a href="/lobby" class="back-lobby-link">回到大廳</a>
+  <h1 class="welcome-title">歡迎，{{ nickname }}！</h1>
   <div id="status"></div>
   <div id="game" style="display:none;">
     <div id="asker-panel" style="display:none;">

@@ -3,14 +3,16 @@
 <head>
     <title>遊戲大廳</title>
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='lobby.css') }}">
 </head>
 <body>
 
 
     <h1>歡迎 {{ nickname }} 來到大廳</h1>
-    <a href="/logout">登出</a>
+    <a href="/logout" class="logout-link">登出</a>
 
-    <h2>排行榜</h2>
+    <div class="leaderboard-section">
+    <h2 class="leaderboard-title">排行榜</h2>
     <table border="1" style="margin-bottom:16px;">
         <tr><th>名次</th><th>暱稱</th><th>答對題數</th></tr>
         {% for user in leaderboard %}
@@ -21,9 +23,12 @@
         </tr>
         {% endfor %}
     </table>
+    </div>
 
-    <h2>線上使用者</h2>
-    <ul id="user_list"></ul>
+    <div class="online-users-section">
+        <h2>線上使用者</h2>
+        <ul id="user_list"></ul>
+    </div>
 
     <!-- 修改這裡：直接跳轉到 /game -->
     <button id="start_game_btn" onclick="goToGame()">開始遊戲</button>

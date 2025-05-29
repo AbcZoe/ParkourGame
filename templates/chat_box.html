@@ -1,6 +1,7 @@
 <!-- 聊天室元件，可 include 到各頁面 -->
-<div id="chatContainer" style="position:fixed; top:0; right:0; height:100vh; width:320px; z-index:9999; display:flex; flex-direction:column;">
-    <button id="chatToggleBtn" onclick="toggleChat()" style="align-self:flex-end; margin:4px;">隱藏聊天室</button>
+<link rel="stylesheet" href="{{ url_for('static', filename='chat_box.css') }}">
+<div id="chatContainer" style="position:fixed; top:56px; right:0; height:calc(100vh - 56px); width:320px; z-index:9999; display:flex; flex-direction:column;">
+    <button id="chatToggleBtn" aqua;" onclick="toggleChat()">隱藏聊天室</button>    
     <div id="chatBox" style="flex:1; background:#fff; border-left:1px solid #ccc; display:flex; flex-direction:column;">
         <ul id="chatList" style="flex:1; overflow-y:auto; list-style:none; margin:0; padding:8px;"></ul>
         <div style="display:flex; border-top:1px solid #eee;">
