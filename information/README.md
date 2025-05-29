@@ -3,6 +3,7 @@
 本文件說明使用 Flask、SocketIO、MySQL 與 Session 所開發之多人互動遊戲網頁的主要功能模組與細節。
 pip install Flask Flask-SocketIO Flask-Session eventlet mysql-connector-python pymysql bcrypt
 
+
 ---
 
 ## 🔧 技術架構
@@ -54,6 +55,18 @@ pip install Flask Flask-SocketIO Flask-Session eventlet mysql-connector-python p
 - 個人資料頁面（查看歷史對戰紀錄、積分、勝率等）
 - 全站排行榜（以答對題數排行）
 - MySQL 儲存並查詢相關資料
+
+---
+
+## 🗄️ MySQL 資料庫結構
+
+- 資料庫名稱：`netgame`
+    - 資料表：`users`
+        - `id` (主鍵)
+        - `username` (帳號)
+        - `password` (加密密碼)
+        - `nickname` (暱稱)
+        - `score` (積分)
 
 ---
 
