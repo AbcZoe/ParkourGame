@@ -1,6 +1,7 @@
 # 🎮 遊戲網頁功能規劃文件
 
 本文件說明使用 Flask、SocketIO、MySQL 與 Session 所開發之多人互動遊戲網頁的主要功能模組與細節。
+pip install Flask Flask-SocketIO Flask-Session eventlet mysql-connector-python pymysql bcrypt
 
 ---
 
