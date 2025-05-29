@@ -3,13 +3,8 @@ Flask-SocketIO==5.3.6
 Flask-Session==0.4.0
 eventlet==0.35.1
 mysql-connector-python==8.3.0
-
 pymysql
 bcrypt
+cryptography
 
 在本機測試時要兩個不同的瀏覽器開
-
-mysql
-netgame
-    users
-        id username password nickname score
