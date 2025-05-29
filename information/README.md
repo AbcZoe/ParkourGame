@@ -1,7 +1,24 @@
 # 🎮 遊戲網頁功能規劃文件
 
 本文件說明使用 Flask、SocketIO、MySQL 與 Session 所開發之多人互動遊戲網頁的主要功能模組與細節。
+
+-- 安裝套件
 pip install Flask Flask-SocketIO Flask-Session eventlet mysql-connector-python pymysql bcrypt
+
+-- 建立資料庫
+CREATE DATABASE IF NOT EXISTS netgame CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- 使用該資料庫
+USE netgame;
+
+-- 建立 users 資料表
+CREATE TABLE IF NOT EXISTS users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(50) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
+    nickname VARCHAR(50),
+    score INT DEFAULT 0
+);
 
 
 ---
