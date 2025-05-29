@@ -1,0 +1,36 @@
+services:
+  netgame:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: netgame_app
+    ports:
+      - "5000:5000"
+    volumes:
+      - ../flask_session:/app/flask_session
+    environment:
+      - FLASK_ENV=development
+      - MYSQL_HOST=db
+      - MYSQL_USER=root
+      - MYSQL_PASSWORD=netgamepw
+      - MYSQL_ROOT_PASSWORD=netgamepw
+      - MYSQL_DATABASE=netgame
+    depends_on:
+      - db
+    command: python app.py
+
+  db:
+    image: mysql:8.0
+    container_name: netgame_db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: netgamepw
+      MYSQL_DATABASE: netgame
+    ports:
+      - "3307:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+
+volumes:
+  db_data:

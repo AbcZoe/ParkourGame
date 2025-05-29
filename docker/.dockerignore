@@ -1,0 +1,13 @@
+# 這個 .dockerignore 檔案會排除不需要加入 Docker 映像的檔案與資料夾
+__pycache__/
+flask_session/
+*.pyc
+*.pyo
+*.pyd
+*.db
+*.sqlite3
+*.log
+.dockerignore
+docker-compose.yml
+.git
+.gitignore

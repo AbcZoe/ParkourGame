@@ -1,0 +1,11 @@
+-- 建立 netgame 資料庫與 users 資料表
+CREATE DATABASE IF NOT EXISTS netgame DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE netgame;
+
+CREATE TABLE IF NOT EXISTS users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(50) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
+    nickname VARCHAR(50) NOT NULL,
+    score INT DEFAULT 0
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

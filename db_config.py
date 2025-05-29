@@ -1,13 +1,14 @@
 import pymysql
 from flask import g
+import os
 
 def get_db():
     if 'db' not in g:
         g.db = pymysql.connect(
-            host='localhost',
-            user='root',
-            password='123456',
-            db='netgame',
+            host=os.environ.get('MYSQL_HOST', 'db'),
+            user=os.environ.get('MYSQL_USER', 'root'),
+            password=os.environ.get('MYSQL_PASSWORD', 'netgamepw'),
+            db=os.environ.get('MYSQL_DATABASE', 'netgame'),
             charset='utf8mb4',
             cursorclass=pymysql.cursors.DictCursor
         )
