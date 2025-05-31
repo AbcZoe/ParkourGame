@@ -4,7 +4,8 @@
 
 -- 安裝套件
 pip install Flask Flask-SocketIO Flask-Session eventlet mysql-connector-python pymysql bcrypt cryptography
---關於下載cryptography的原因
+
+-- 關於下載cryptography的原因
 雖然在程式碼中並沒有直接 import cryptography，但 bcrypt 的某些版本（特別是新版）在安裝時會自動使用 cryptography 來加速或處理底層加密運算。
 
 -- 建立資料庫
