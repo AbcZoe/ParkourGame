@@ -91,10 +91,11 @@ game_started = False
 players = {}
 player_list = []
 hints = []
+last_asker = None  # 上一回合出題者
 
 @socketio.on('join')
 def on_join(data):
-    global game_started, Asker
+    global game_started, Asker, last_asker
     sid = request.sid
     name = data['name']
     players[sid] = name
@@ -104,20 +105,19 @@ def on_join(data):
     emit('message', f"{name} 加入遊戲", broadcast=True)
 
     if not game_started and len(player_list) >= 2:
-        Asker = random.choice(player_list)
+        # 新增：選出題者時排除上一回合的出題者
+        candidates = [sid for sid in player_list if sid != last_asker] if last_asker and len(player_list) > 1 else player_list
+        Asker = random.choice(candidates)
         game_started = True
         socketio.emit('message', "🎮 遊戲開始！請根據特徵猜出物品。")
         socketio.emit('set_asker', {'asker_sid': Asker})
     elif game_started:
         # 遊戲正在進行中，新加入者要進入猜題狀態
         emit('set_asker', {'asker_sid': Asker}, to=sid)
-
-        # 若已出題也可選擇補送提示（選做）
         if Answer:
             emit('message', f"🆕 歡迎{name}加入遊戲，請開始猜題！", to=sid)
             for hint in hints:
                 emit('extraHint', f"💡 提示：{hint}", to=sid)
-
     # 確保遊戲能恢復
     if not game_started and len(player_list) >= 2:
         reset_game()
@@ -165,7 +165,7 @@ def on_guess(data):
         emit('message', f"{name} 猜 {guess} ，猜錯了。", broadcast=True)
 
 def reset_game():
-    global Asker, Answer, game_started,hints
+    global Asker, Answer, game_started, hints, last_asker
 
     # 清掉不存在的 sid
     valid_sids = set(sid_to_nickname.keys())
@@ -173,6 +173,7 @@ def reset_game():
         if sid not in valid_sids:
             player_list.remove(sid)
 
+    last_asker = Asker  # 記錄上一回合的出題者
     Asker = ''
     Answer = ''
     game_started = False
@@ -182,13 +183,14 @@ def reset_game():
     socketio.emit('reset_game')
 
     if len(player_list) >= 2:
-        Asker = random.choice(player_list)
+        # 新增：選新出題者時排除上一回合的出題者
+        candidates = [sid for sid in player_list if sid != last_asker] if last_asker and len(player_list) > 1 else player_list
+        Asker = random.choice(candidates)
         game_started = True
         socketio.emit('message', "🆕 新回合開始！")
         socketio.emit('set_asker', {'asker_sid': Asker})
     else:
         socketio.emit('message', "⚠️ 人數不足，請等待更多玩家加入")
-
 
 
 

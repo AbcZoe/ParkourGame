@@ -103,6 +103,9 @@
       document.getElementById('Hints').innerHTML = '';
       // 清空猜謎輸入框
       document.getElementById('guess').value = '';
+      // 解除鎖定謎底與提示欄位，防止出題者修改
+      document.getElementById('answer').disabled = false;
+      document.getElementById('hint').disabled = false;
       // 重置狀態顯示
       document.getElementById('status').innerText = '🎯 遊戲已重置，請準備開始新的遊戲';
     });
