@@ -54,14 +54,17 @@
     });
 
     function submitQuestion() {
-      const answer = document.getElementById('answer').value;
-      const hint = document.getElementById('hint').value;
-      if (answer) {
-          socket.emit('question', { answer });
-      }
-      if (hint) {
-        socket.emit('hint', { hint });
-      }
+      const answer = document.getElementById('answer').value;
+      const hint = document.getElementById('hint').value;
+      if (answer) {
+        socket.emit('question', { answer });
+      }
+      if (hint) {
+        socket.emit('hint', { hint });
+      }
+      // 鎖定謎底與提示欄位，防止出題者修改
+      document.getElementById('answer').disabled = true;
+      document.getElementById('hint').disabled = true;
     }
 
     function addHint() {
@@ -93,6 +96,15 @@
       const li = document.createElement('li');
       li.innerText = hint;
       document.getElementById('Hints').appendChild(li);
+    });
+
+    socket.on('reset_game', () => {
+      // 清空提示列表
+      document.getElementById('Hints').innerHTML = '';
+      // 清空猜謎輸入框
+      document.getElementById('guess').value = '';
+      // 重置狀態顯示
+      document.getElementById('status').innerText = '🎯 遊戲已重置，請準備開始新的遊戲';
     });
 
   </script>

@@ -127,7 +127,7 @@ def on_join(data):
 def Ask_question(data):
     global Answer
     Answer = data['answer']  # 謎底
-    emit('message', f"出題者:{players.get(Asker)}")
+    emit('message', f"出題者:{players.get(Asker)}", broadcast=True)
 
 @socketio.on('hint')
 def Ask_hint(data):
@@ -149,7 +149,7 @@ def on_guess(data):
         return
 
     if guess == Answer:
-        emit('message', f"🎉{name} 猜 {guess} ，猜中了 ！")
+        emit('message', f"🎉{name} 猜 {guess} ，猜中了 ！", broadcast=True)
          # 更新資料庫中的分數
         try:
             db = db_config.get_db()
@@ -162,7 +162,7 @@ def on_guess(data):
 
         reset_game()
     elif guess != Answer:
-        emit('message', f"{name} 猜 {guess} ，猜錯了。")
+        emit('message', f"{name} 猜 {guess} ，猜錯了。", broadcast=True)
 
 def reset_game():
     global Asker, Answer, game_started,hints
@@ -177,6 +177,9 @@ def reset_game():
     Answer = ''
     game_started = False
     hints = []
+
+    # 通知前端重置提示
+    socketio.emit('reset_game')
 
     if len(player_list) >= 2:
         Asker = random.choice(player_list)
