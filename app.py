@@ -134,7 +134,7 @@ def Ask_hint(data):
     global hints
     hint = data['hint']
     hints.append(hint)
-    emit('extraHint', f"💡 提示：{hint}")
+    emit('extraHint', f"💡 提示：{hint}", broadcast=True)
     
     
 @socketio.on('guess')
