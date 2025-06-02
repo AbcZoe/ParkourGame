@@ -9,6 +9,7 @@ pip install Flask Flask-SocketIO Flask-Session eventlet mysql-connector-python p
 雖然在程式碼中並沒有直接 import cryptography，但 bcrypt 的某些版本（特別是新版）在安裝時會自動使用 cryptography 來加速或處理底層加密運算。
 
 -- 建立資料庫
+mysql -u root -p
 CREATE DATABASE IF NOT EXISTS netgame CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- 使用該資料庫
